@@ -2,6 +2,7 @@ import gym
 import numpy as np
 import PolicyAgent as P
 import QAgent as Q
+import time
 
 
 # compute the discounted rewards
@@ -28,15 +29,25 @@ def calc_reward(state, threshold, penalty):
     height = -cos0 - ((cos1 * cos0) - (sin1 * sin0))
     # height = -height * height
 
+
+
     # calculate average rotational speed of the two axes
     a_speed = np.abs(state[4]) + np.abs(state[5]) / 2
 
+    reward = 0
+    if height < -1:
+        reward = min(a_speed, 10)
+    elif height > 1:
+        if a_speed < 2:
+            reward = 500
+        else:
+            reward = 100
+    else:
+        reward = height + 20
     # if speed is greater than threshold, apply a penalty to the reward
     if a_speed > threshold:
         return height - penalty
-    return height
-
-
+    return -reward
 
 # initialize values
 env = gym.make('Acrobot-v1')
@@ -44,7 +55,7 @@ env = gym.make('Acrobot-v1')
 # agent = P.PolicyAgent(rate=0.01)
 agent = P.PolicyAgent(0.01)
 
-episodes = 300
+episodes = 250
 episode_length = 500
 
 reward_history = []
@@ -58,7 +69,7 @@ for i in range(0, episodes):
         action_vals = agent.get_output(state)
         action = np.random.choice([0, 1, 2], p=action_vals[0])
         new_state, reward, done, info = env.step(action)
-        reward = calc_reward(new_state, 20, 1000)
+        reward = calc_reward(new_state, 30, 200)
         # np.abs(state[4]) + 1
         # record previous state, action, reward, and new state
         episode_history.append([state, action, reward, new_state])
@@ -86,8 +97,10 @@ while True:
         action_vals = agent.get_output(state)
         action = np.random.choice([0, 1, 2], p=action_vals[0])
         new_state, reward, done, info = env.step(action)
-        reward = calc_reward(new_state, 20, 6)
+        reward = calc_reward(new_state, 14, 200)
         # np.abs(state[4]) + 1
         # record previous state, action, reward, and new state
         state = new_state
         env.render()
+        print(reward)
+        time.sleep(0.01)
